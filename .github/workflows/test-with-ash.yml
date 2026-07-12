@@ -1,0 +1,76 @@
+name: ASH IaC Security Scan
+
+on:
+  # Run on push to main, and allow manual runs
+  push:
+    branches: [ main ]
+  workflow_dispatch:        # Manual trigger from Actions tab
+
+jobs:
+  # -------------------------
+  # Job 1: BUILD STAGE (Terraform sanity)
+  # -------------------------
+  build:
+    runs-on: ubuntu-latest  # Use GitHub-hosted Ubuntu runner
+
+    steps:
+      # Get TerraGoat code into the runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Install Terraform CLI
+      - name: Install Terraform
+        run: |
+          curl -fsSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip
+          sudo unzip terraform.zip -d /usr/local/bin
+          terraform -version
+
+      # Basic Terraform checks (format + validate)
+      - name: Terraform fmt and validate
+        run: |
+          terraform fmt -check || true      # Check formatting; don't fail learning pipeline
+          terraform init -backend=false     # Init without real backend
+          terraform validate                # Validate configuration files
+
+  # -------------------------
+  # Job 2: TEST STAGE (ASH IaC scan)
+  # -------------------------
+  test:
+    runs-on: ubuntu-latest  # Same runner type as build
+    needs: build            # Only scan if build stage succeeded
+
+    steps:
+      # Get TerraGoat code into this job
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Build ASH Docker image from official repo
+      - name: Build ASH Docker image
+        run: |
+          git clone https://github.com/awslabs/automated-security-helper.git
+          cd automated-security-helper
+          docker build -t automated-security-helper:non-root .
+          docker images | grep automated-security-helper || true
+
+      # Prepare output directory for ASH reports
+      - name: Prepare ASH output directory
+        run: |
+          mkdir -p .ash/ash_output          # Host directory for results
+          chmod 777 .ash/ash_output         # Make it writable from container
+
+      # Run ASH scan in container mode against TerraGoat IaC
+      - name: Run ASH security scan (container mode)
+        run: |
+          docker run --rm \
+            --user root \
+            -v "$(pwd)":/workspace \
+            -v "$(pwd)/.ash/ash_output":/ash_output \
+            automated-security-helper:non-root \
+            ash --source-dir /workspace --output-dir /ash_output || true
+
+      # Upload ASH HTML report as artifact for easy viewing
+      - name: Upload ASH HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ash-iac-html-report
+          path: .ash/ash_output/reports/ash.html
