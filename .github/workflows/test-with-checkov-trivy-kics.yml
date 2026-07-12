@@ -1,11 +1,10 @@
 name: IaC Security Scan (Checkov + Trivy)
 
 on:
-  # Run on push to main, and allow manual runs
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ master ]        # Run on any PR targeting the master branch
+    branches: [ main, master ]
 
 jobs:
   # ------------------------
