@@ -52,7 +52,7 @@ jobs:
 
       - name: Run Checkov and generate HTML
         run: |
-          checkov -d . --framework terraform -o html > checkov-report.html || true
+          checkov -d . --framework terraform -o html > checkov-report.html 
 
       # --- Trivy temporarily disabled ---
       # - name: Install Trivy
@@ -63,7 +63,7 @@ jobs:
       #
       # - name: Run Trivy config scan and generate HTML
       #   run: |
-      #     trivy config --format html -o trivy-report.html . || true
+      #     trivy config --format html -o trivy-report.html . 
 
       # Upload only Checkov HTML report as artifact
       - name: Upload IaC HTML reports
