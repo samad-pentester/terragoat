@@ -1,4 +1,4 @@
-name: IaC Security Scan (Checkov + Trivy)
+name: IaC Security Scan (Checkov only)
 
 on:
   push:
@@ -7,93 +7,69 @@ on:
     branches: [ main, master ]
 
 jobs:
-  # ------------------------
+  # -------------------------
   # Job 1: BUILD STAGE (Terraform sanity)
   # -------------------------
   build:
-    runs-on: ubuntu-latest        # GitHub-hosted Ubuntu runner
+    runs-on: ubuntu-latest
 
     steps:
-      # Get TerraGoat code into the runner
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install Terraform CLI
       - name: Install Terraform
         run: |
           curl -fsSL https://releases.hashicorp.com/terraform/1.5.7/terraform_1.5.7_linux_amd64.zip -o terraform.zip
           sudo unzip terraform.zip -d /usr/local/bin
           terraform -version
 
-      # Basic Terraform checks (format + validate)
       - name: Terraform fmt and validate
         run: |
-          terraform fmt -check || true      # Check formatting; don't block learning
-          terraform init -backend=false     # Init without real backend
-          terraform validate                # Validate Terraform files
+          terraform fmt -check || true
+          terraform init -backend=false
+          terraform validate
 
   # -------------------------
-  # Job 2: TEST STAGE (IaC scanners: Checkov + Trivy)
+  # Job 2: TEST STAGE (Checkov)
   # -------------------------
   test:
-    runs-on: ubuntu-latest        # Same runner type as build
-    needs: build                  # Only run scanners if build passed
+    runs-on: ubuntu-latest
+    needs: build
 
     steps:
-      # Get TerraGoat code into this job
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Install Python for Checkov
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # Install Checkov via pip
       - name: Install Checkov
         run: |
           python -m pip install --upgrade pip
           pip install checkov
 
-      # Run Checkov against Terraform and generate HTML report
       - name: Run Checkov and generate HTML
         run: |
-          # Scan Terraform directory and output HTML directly
           checkov -d . --framework terraform -o html > checkov-report.html || true
 
-      # Install Trivy CLI
-      - name: Install Trivy
-        run: |
-          # Install Trivy CLI into /usr/local/bin using official install script
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-            | sudo sh -s -- -b /usr/local/bin
-          # Verify installation
-          trivy --version
-
-      # Run Trivy config scan and generate HTML report
-      - name: Run Trivy config scan and generate HTML
-        run: |
-          # Scan Terraform/IaC configs and output HTML
-          trivy config --format html -o trivy-report.html . || true
-
-      # (KICS temporarily suppressed in this workflow)
-      # - name: Install KICS
+      # --- Trivy temporarily disabled ---
+      # - name: Install Trivy
       #   run: |
-      #     sudo curl -sfL 'https://raw.githubusercontent.com/Checkmarx/kics/master/install.sh' \
-      #       | bash -s -- -b /usr/local/bin
-      #     kics version
+      #     curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+      #       | sudo sh -s -- -b /usr/local/bin
+      #     trivy --version
       #
-      # - name: Run KICS scan and generate HTML
+      # - name: Run Trivy config scan and generate HTML
       #   run: |
-      #     kics scan -p . -o kics-report.html --report-formats html || true
+      #     trivy config --format html -o trivy-report.html . || true
 
-      # Upload HTML reports as artifacts
+      # Upload only Checkov HTML report as artifact
       - name: Upload IaC HTML reports
         uses: actions/upload-artifact@v4
         with:
-          name: iac-multi-scanners-html-reports
+          name: iac-checkov-html-report
           path: |
             checkov-report.html
-            trivy-report.html
-            # kics-report.html
+            # trivy-report.html
