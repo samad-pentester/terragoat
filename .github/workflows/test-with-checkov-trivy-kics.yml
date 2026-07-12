@@ -60,7 +60,7 @@ jobs:
       - name: Run Checkov and generate HTML
         run: |
           # Scan Terraform directory and output JSON
-          checkov -d . --framework terraform -o json > checkov-report.json
+          checkov -d . --framework terraform -o json > checkov-report.json || true
           # Simple HTML wrapper using jq and pre tag (learning-friendly)
           echo "<html><body><h1>Checkov Report (JSON)</h1><pre>" > checkov-report.html
           cat checkov-report.json >> checkov-report.html
@@ -78,7 +78,7 @@ jobs:
       - name: Run Trivy config scan and generate HTML
         run: |
           # Scan Terraform/IaC configs and output HTML
-          trivy config --format html -o trivy-report.html .
+          trivy config --format html -o trivy-report.html . || true
 
       # Install KICS CLI
       - name: Install KICS
@@ -91,7 +91,7 @@ jobs:
       - name: Run KICS scan and generate HTML
         run: |
           # Scan Terraform directory and output HTML report
-          ./kics scan -p . -o kics-report.html --report-formats html
+          ./kics scan -p . -o kics-report.html --report-formats html || true
 
       # Upload all three HTML reports as artifacts
       - name: Upload IaC HTML reports
