@@ -69,10 +69,11 @@ jobs:
       # Install Trivy CLI
       - name: Install Trivy
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget
-          wget -qO- https://raw.githubusercontent.com/aquasecurity/trivy/main/install.sh | sudo sh
-          trivy -v
+          # Install Trivy CLI into /usr/local/bin using official install script
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sudo sh -s -- -b /usr/local/bin
+          # Verify installation
+          trivy --version
 
       # Run Trivy config scan and generate HTML report
       - name: Run Trivy config scan and generate HTML
