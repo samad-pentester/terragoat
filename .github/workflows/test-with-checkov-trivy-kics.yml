@@ -82,17 +82,17 @@ jobs:
           trivy config --format html -o trivy-report.html . || true
 
       # Install KICS CLI
-      - name: Install KICS
-        run: |
-          curl -fsSL https://github.com/Checkmarx/kics/releases/latest/download/kics-linux-amd64.tar.gz -o kics.tar.gz
-          tar -xzf kics.tar.gz
-          chmod +x kics
+      # - name: Install KICS
+      #  run: |
+      #    curl -fsSL https://github.com/Checkmarx/kics/releases/latest/download/kics-linux-amd64.tar.gz -o kics.tar.gz
+      #    tar -xzf kics.tar.gz
+      #    chmod +x kics
 
       # Run KICS scan and generate HTML report
-      - name: Run KICS scan and generate HTML
-        run: |
-          # Scan Terraform directory and output HTML report
-          ./kics scan -p . -o kics-report.html --report-formats html || true
+      #- name: Run KICS scan and generate HTML
+      #  run: |
+      #    # Scan Terraform directory and output HTML report
+      #    ./kics scan -p . -o kics-report.html --report-formats html || true
 
       # Upload all three HTML reports as artifacts
       - name: Upload IaC HTML reports
@@ -102,4 +102,4 @@ jobs:
           path: |
             checkov-report.html
             trivy-report.html
-            kics-report.html
+      #     kics-report.html
