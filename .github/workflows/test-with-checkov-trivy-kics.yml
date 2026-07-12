@@ -1,10 +1,9 @@
-name: IaC Security Scan (Checkov + Trivy + KICS)
+name: IaC Security Scan (Checkov + Trivy)
 
 on:
   # Run on push to main, and allow manual runs
   push:
     branches: [ main ]
-  workflow_dispatch:              # Manual trigger from Actions tab
 
 jobs:
   # -------------------------
@@ -33,7 +32,7 @@ jobs:
           terraform validate                # Validate Terraform files
 
   # -------------------------
-  # Job 2: TEST STAGE (IaC scanners: Checkov + Trivy + KICS)
+  # Job 2: TEST STAGE (IaC scanners: Checkov + Trivy)
   # -------------------------
   test:
     runs-on: ubuntu-latest        # Same runner type as build
@@ -56,15 +55,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install checkov
 
-      # Run Checkov against Terraform and generate HTML report (via JSON + converter)
+      # Run Checkov against Terraform and generate HTML report
       - name: Run Checkov and generate HTML
         run: |
-          # Scan Terraform directory and output JSON
-          checkov -d . --framework terraform -o json > checkov-report.json || true
-          # Simple HTML wrapper using jq and pre tag (learning-friendly)
-          echo "<html><body><h1>Checkov Report (JSON)</h1><pre>" > checkov-report.html
-          cat checkov-report.json >> checkov-report.html
-          echo "</pre></body></html>" >> checkov-report.html
+          # Scan Terraform directory and output HTML directly
+          checkov -d . --framework terraform -o html > checkov-report.html || true
 
       # Install Trivy CLI
       - name: Install Trivy
@@ -81,20 +76,18 @@ jobs:
           # Scan Terraform/IaC configs and output HTML
           trivy config --format html -o trivy-report.html . || true
 
-      # Install KICS CLI
+      # (KICS temporarily suppressed in this workflow)
       # - name: Install KICS
-      #  run: |
-      #    curl -fsSL https://github.com/Checkmarx/kics/releases/latest/download/kics-linux-amd64.tar.gz -o kics.tar.gz
-      #    tar -xzf kics.tar.gz
-      #    chmod +x kics
+      #   run: |
+      #     sudo curl -sfL 'https://raw.githubusercontent.com/Checkmarx/kics/master/install.sh' \
+      #       | bash -s -- -b /usr/local/bin
+      #     kics version
+      #
+      # - name: Run KICS scan and generate HTML
+      #   run: |
+      #     kics scan -p . -o kics-report.html --report-formats html || true
 
-      # Run KICS scan and generate HTML report
-      #- name: Run KICS scan and generate HTML
-      #  run: |
-      #    # Scan Terraform directory and output HTML report
-      #    ./kics scan -p . -o kics-report.html --report-formats html || true
-
-      # Upload all three HTML reports as artifacts
+      # Upload HTML reports as artifacts
       - name: Upload IaC HTML reports
         uses: actions/upload-artifact@v4
         with:
@@ -102,4 +95,4 @@ jobs:
           path: |
             checkov-report.html
             trivy-report.html
-      #     kics-report.html
+            # kics-report.html
