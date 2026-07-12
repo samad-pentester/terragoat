@@ -8,7 +8,7 @@ on:
     branches: [ master ]        # Run on any PR targeting the master branch
 
 jobs:
-  # -------------------------
+  # ------------------------
   # Job 1: BUILD STAGE (Terraform sanity)
   # -------------------------
   build:
